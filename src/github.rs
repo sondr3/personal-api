@@ -4,6 +4,7 @@ use crate::github::{
 };
 use anyhow::Result;
 use graphql_client::*;
+use serde::Serialize;
 
 type Date = String;
 
@@ -28,6 +29,12 @@ pub struct GitHub {
     pub repositories: Option<RepositoriesQueryUserRepositories>,
 }
 
+impl Default for GitHub {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GitHub {
     pub fn new() -> Self {
         Self {
@@ -43,11 +50,11 @@ impl GitHub {
         Ok(())
     }
 
-    async fn query_repositories(&mut self, login: &str, token: &str) -> Result<()> {
-        let query = RepositoriesQuery::build_query(repositories_query::Variables {
-            login: login.to_string(),
-        });
-
+    async fn query<V: Serialize, T: GraphQLQuery>(
+        &mut self,
+        token: &str,
+        query: QueryBody<V>,
+    ) -> Result<T::ResponseData> {
         let client = reqwest::Client::builder()
             .user_agent(format!("sondr3/personal-api#{}", env!("CARGO_PKG_VERSION")))
             .build()?;
@@ -61,10 +68,20 @@ impl GitHub {
 
         res.error_for_status_ref()?;
 
-        let body: Response<repositories_query::ResponseData> = res.json().await?;
-        let data: repositories_query::ResponseData = body.data.expect("missing response data");
+        let body: Response<T::ResponseData> = res.json().await?;
+        Ok(body.data.expect("missing response data"))
+    }
 
-        self.repositories = Some(data.user.unwrap().repositories);
+    async fn query_repositories(&mut self, login: &str, token: &str) -> Result<()> {
+        let query = RepositoriesQuery::build_query(repositories_query::Variables {
+            login: login.to_string(),
+        });
+
+        let res: repositories_query::ResponseData = self
+            .query::<repositories_query::Variables, RepositoriesQuery>(token, query)
+            .await?;
+
+        self.repositories = Some(res.user.unwrap().repositories);
 
         Ok(())
     }
@@ -74,23 +91,11 @@ impl GitHub {
             login: login.to_string(),
         });
 
-        let client = reqwest::Client::builder()
-            .user_agent(format!("sondr3/personal-api#{}", env!("CARGO_PKG_VERSION")))
-            .build()?;
-
-        let res = client
-            .post("https://api.github.com/graphql")
-            .bearer_auth(token)
-            .json(&query)
-            .send()
+        let res: contributions_query::ResponseData = self
+            .query::<contributions_query::Variables, ContributionsQuery>(token, query)
             .await?;
 
-        res.error_for_status_ref()?;
-
-        let body: Response<contributions_query::ResponseData> = res.json().await?;
-        let data: contributions_query::ResponseData = body.data.expect("missing response data");
-
-        self.contributions = Some(data.user.unwrap().contributions_collection);
+        self.contributions = Some(res.user.unwrap().contributions_collection);
 
         Ok(())
     }
