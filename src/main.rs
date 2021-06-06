@@ -6,7 +6,6 @@ use anyhow::Result;
 use dotenv::dotenv;
 use graphql_client::*;
 use log::info;
-use pretty_env_logger;
 use serde::Deserialize;
 use warp::Filter;
 
