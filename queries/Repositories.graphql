@@ -1,0 +1,18 @@
+query RepositoriesQuery($login: String!) {
+  user(login: $login) {
+    repositories(
+      first: 50
+      privacy: PUBLIC
+      isFork: false
+      affiliations: [OWNER, COLLABORATOR, ORGANIZATION_MEMBER]
+      orderBy: { field: STARGAZERS, direction: DESC }
+    ) {
+      nodes {
+        name
+        stargazers {
+          totalCount
+        }
+      }
+    }
+  }
+}
