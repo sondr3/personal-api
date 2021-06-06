@@ -4,6 +4,7 @@ use anyhow::Result;
 use dotenv::dotenv;
 use log::info;
 use serde::Deserialize;
+use sqlx::sqlite::SqlitePoolOptions;
 use warp::Filter;
 
 use crate::github::GitHub;
@@ -12,6 +13,7 @@ use crate::github::GitHub;
 struct Env {
     login: String,
     token: String,
+    database_url: String,
 }
 
 #[tokio::main]
@@ -21,6 +23,13 @@ async fn main() -> Result<()> {
 
     let env = envy::from_env::<Env>()?;
     info!("{:?}", env);
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(&env.database_url)
+        .await?;
+
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
     let mut gh = GitHub::new();
     gh.update(&env.login, &env.token).await?;
