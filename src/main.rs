@@ -2,6 +2,7 @@ use crate::{
     contributions_query::ContributionsQueryUserContributionsCollection,
     repositories_query::RepositoriesQueryUserRepositories,
 };
+use anyhow::Result;
 use dotenv::dotenv;
 use graphql_client::*;
 use log::info;
@@ -46,18 +47,14 @@ impl GitHub {
         }
     }
 
-    async fn update(&mut self, login: &str, token: &str) -> Result<(), Box<dyn std::error::Error>> {
+    async fn update(&mut self, login: &str, token: &str) -> Result<()> {
         self.query_contributions(login, token).await?;
         self.query_repositories(login, token).await?;
 
         Ok(())
     }
 
-    pub async fn query_repositories(
-        &mut self,
-        login: &str,
-        token: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn query_repositories(&mut self, login: &str, token: &str) -> Result<()> {
         let query = RepositoriesQuery::build_query(repositories_query::Variables {
             login: login.to_string(),
         });
@@ -83,11 +80,7 @@ impl GitHub {
         Ok(())
     }
 
-    pub async fn query_contributions(
-        &mut self,
-        login: &str,
-        token: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn query_contributions(&mut self, login: &str, token: &str) -> Result<()> {
         let query = ContributionsQuery::build_query(contributions_query::Variables {
             login: login.to_string(),
         });
@@ -115,7 +108,7 @@ impl GitHub {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     dotenv().ok();
     pretty_env_logger::init();
 
