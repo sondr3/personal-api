@@ -9,8 +9,27 @@ query RepositoriesQuery($login: String!) {
     ) {
       nodes {
         name
-        stargazers {
-          totalCount
+        nameWithOwner
+        createdAt
+        languages {
+          nodes {
+            name
+          }
+        }
+        licenseInfo {
+          name
+          nickname
+        }
+        primaryLanguage {
+          name
+        }
+        stargazerCount
+        releases(last: 1) {
+          nodes {
+            createdAt
+            tagName
+            url
+          }
         }
       }
     }
