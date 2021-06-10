@@ -1,0 +1,13 @@
+{
+  "db": "SQLite",
+  "081079421b876082f66da097ad662efbc878d8887112021309102197048b114a": {
+    "query": "insert into contact (sender, message) values (?, ?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  }
+}

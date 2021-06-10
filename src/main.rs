@@ -7,7 +7,11 @@ use anyhow::Result;
 use dotenv::dotenv;
 use rocket::{Build, Rocket};
 use serde::Deserialize;
-use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, Pool, Sqlite, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
+    ConnectOptions, Pool, Sqlite, SqlitePool,
+};
+use std::str::FromStr;
 
 use crate::github::GitHub;
 
@@ -24,11 +28,12 @@ fn hello(name: &str) -> String {
 }
 
 async fn initialize_db(env: &Env) -> Result<Pool<Sqlite>> {
-    let mut opts = SqliteConnectOptions::new()
-        .filename(&env.database_url)
+    let mut opts = SqliteConnectOptions::from_str(&env.database_url)?
+        .journal_mode(SqliteJournalMode::Wal)
+        .synchronous(SqliteSynchronous::Normal)
         .create_if_missing(true);
-
     opts.disable_statement_logging();
+
     let pool = SqlitePool::connect_with(opts).await?;
 
     sqlx::migrate!("./migrations").run(&pool).await?;

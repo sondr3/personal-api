@@ -8,6 +8,7 @@ use serde::Serialize;
 
 type Date = String;
 type DateTime = String;
+#[allow(clippy::upper_case_acronyms)]
 type URI = String;
 
 #[derive(GraphQLQuery)]
