@@ -3,13 +3,11 @@ extern crate rocket;
 
 pub mod github;
 
+use anyhow::Result;
 use dotenv::dotenv;
-use rocket::{
-    fairing::{self, AdHoc},
-    Build, Rocket,
-};
+use rocket::{Build, Rocket};
 use serde::Deserialize;
-use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
+use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, Pool, Sqlite, SqlitePool};
 
 use crate::github::GitHub;
 
@@ -25,33 +23,23 @@ fn hello(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-async fn initialize_db(rocket: Rocket<Build>) -> fairing::Result {
-    let env = match envy::from_env::<Env>() {
-        Ok(env) => env,
-        Err(e) => panic!("{}", e),
-    };
-
+async fn initialize_db(env: &Env) -> Result<Pool<Sqlite>> {
     let mut opts = SqliteConnectOptions::new()
         .filename(&env.database_url)
         .create_if_missing(true);
 
     opts.disable_statement_logging();
-    let pool = match SqlitePool::connect_with(opts).await {
-        Ok(it) => it,
-        Err(e) => panic!("{}", e),
-    };
+    let pool = SqlitePool::connect_with(opts).await?;
 
-    match sqlx::migrate!("./migrations").run(&pool).await {
-        Ok(_) => {}
-        Err(e) => panic!("{}", e),
-    };
+    sqlx::migrate!("./migrations").run(&pool).await?;
 
-    Ok(rocket.manage(pool))
+    Ok(pool)
 }
 
-fn rocket() -> Rocket<Build> {
+fn rocket(env: Env, pool: Pool<Sqlite>) -> Rocket<Build> {
     rocket::build()
-        .attach(AdHoc::try_on_ignite("SQLx", initialize_db))
+        .manage(env)
+        .manage(pool)
         .mount("/", routes![hello])
 }
 
@@ -64,10 +52,15 @@ async fn main() {
         Err(e) => panic!("{}", e),
     };
 
+    let pool = match initialize_db(&env).await {
+        Ok(p) => p,
+        Err(e) => panic!("{}", e),
+    };
+
     let mut gh = GitHub::new();
     gh.update(&env.login, &env.token).await.unwrap();
 
-    if let Err(e) = rocket().launch().await {
+    if let Err(e) = rocket(env, pool).launch().await {
         eprintln!("Rocket could not launch: {}", e);
         drop(e);
     }
