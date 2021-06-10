@@ -3,11 +3,13 @@ extern crate rocket;
 
 pub mod github;
 
-use anyhow::Result;
 use dotenv::dotenv;
-use rocket::{Build, Rocket};
+use rocket::{
+    fairing::{self, AdHoc},
+    Build, Rocket,
+};
 use serde::Deserialize;
-use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
+use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
 
 use crate::github::GitHub;
 
@@ -23,19 +25,34 @@ fn hello(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-async fn initialize_db(env: &Env) -> Result<Pool<Sqlite>> {
-    let pool = SqlitePoolOptions::new()
-        .max_connections(5)
-        .connect(&env.database_url)
-        .await?;
+async fn initialize_db(rocket: Rocket<Build>) -> fairing::Result {
+    let env = match envy::from_env::<Env>() {
+        Ok(env) => env,
+        Err(e) => panic!("{}", e),
+    };
 
-    sqlx::migrate!("./migrations").run(&pool).await?;
+    let mut opts = SqliteConnectOptions::new()
+        .filename(&env.database_url)
+        .create_if_missing(true);
 
-    Ok(pool)
+    opts.disable_statement_logging();
+    let pool = match SqlitePool::connect_with(opts).await {
+        Ok(it) => it,
+        Err(e) => panic!("{}", e),
+    };
+
+    match sqlx::migrate!("./migrations").run(&pool).await {
+        Ok(_) => {}
+        Err(e) => panic!("{}", e),
+    };
+
+    Ok(rocket.manage(pool))
 }
 
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![hello])
+    rocket::build()
+        .attach(AdHoc::try_on_ignite("SQLx", initialize_db))
+        .mount("/", routes![hello])
 }
 
 #[rocket::main]
@@ -44,11 +61,6 @@ async fn main() {
 
     let env = match envy::from_env::<Env>() {
         Ok(env) => env,
-        Err(e) => panic!("{}", e),
-    };
-
-    let _pool = match initialize_db(&env).await {
-        Ok(pool) => pool,
         Err(e) => panic!("{}", e),
     };
 
