@@ -1,7 +1,8 @@
 #[macro_use]
 extern crate rocket;
 
-pub mod github;
+mod contact;
+mod github;
 
 use anyhow::Result;
 use dotenv::dotenv;
@@ -13,12 +14,13 @@ use sqlx::{
 };
 use std::str::FromStr;
 
-use crate::github::GitHub;
+use crate::{contact::contact_me, github::GitHub};
 
 #[derive(Debug, Deserialize)]
-struct Env {
+pub struct Env {
     login: String,
     token: String,
+    whoami: String,
     database_url: String,
 }
 
@@ -45,7 +47,7 @@ fn rocket(env: Env, pool: Pool<Sqlite>) -> Rocket<Build> {
     rocket::build()
         .manage(env)
         .manage(pool)
-        .mount("/", routes![hello])
+        .mount("/", routes![hello, contact_me])
 }
 
 #[rocket::main]
@@ -62,8 +64,10 @@ async fn main() {
         Err(e) => panic!("{}", e),
     };
 
-    let mut gh = GitHub::new();
-    gh.update(&env.login, &env.token).await.unwrap();
+    if std::env::var("prod").is_ok() {
+        let mut gh = GitHub::new();
+        gh.update(&env.login, &env.token).await.unwrap();
+    }
 
     if let Err(e) = rocket(env, pool).launch().await {
         eprintln!("Rocket could not launch: {}", e);
