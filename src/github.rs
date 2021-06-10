@@ -7,6 +7,8 @@ use graphql_client::*;
 use serde::Serialize;
 
 type Date = String;
+type DateTime = String;
+type URI = String;
 
 #[derive(GraphQLQuery)]
 #[graphql(
