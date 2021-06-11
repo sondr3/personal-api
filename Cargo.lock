@@ -1246,6 +1246,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
+name = "personal-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dotenv",
+ "envy",
+ "graphql_client",
+ "lettre",
+ "reqwest",
+ "rocket",
+ "serde",
+ "sqlx",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2403,21 +2418,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7cff876b8f18eed75a66cf49b65e7f967cb354a7aa16003fb55dbfd25b44b4f"
-
-[[package]]
-name = "web-backend"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "dotenv",
- "envy",
- "graphql_client",
- "lettre",
- "reqwest",
- "rocket",
- "serde",
- "sqlx",
-]
 
 [[package]]
 name = "web-sys"
