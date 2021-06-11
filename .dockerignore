@@ -1,0 +1,6 @@
+.git/
+target/
+sqlx-data.json
+api.db
+!target/debug/personal-api
+!target/release/personal-api
