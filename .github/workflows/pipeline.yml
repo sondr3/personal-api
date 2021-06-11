@@ -73,6 +73,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
