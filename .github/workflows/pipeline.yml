@@ -75,7 +75,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Install musl tools
-        run: sudo apt-get install -y musl-tools libssl-dev
+        run: sudo apt-get install -y musl-tools libssl-dev pkg-config
 
       - name: Build target
         uses: actions-rs/cargo@v1
