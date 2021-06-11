@@ -48,3 +48,91 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+  github_build:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Build release binaries
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            name: personal-api-x86_64-unknown-linux-musl.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install musl tools
+        run: sudo apt-get install -y musl-tools libssl-dev
+
+      - name: Build target
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: Prepare build artifacts
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip personal-api
+          tar czvf ../../../${{ matrix.name }} personal-api
+          cd -
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: personal-api-x86_64-unknown-linux-musl.tar.gz
+          path: personal-api-x86_64-unknown-linux-musl.tar.gz
+
+  github_release_binary:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Create GitHub Release
+    needs: github_build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Download Linux MUSL artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: personal-api-x86_64-unknown-linux-musl.tar.gz
+          path: .
+
+      - name: Print directory
+        run: ls -R
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            personal-api-x86_64-unknown-linux-musl.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: github_release_binary
+    steps:
+      - name: Deploy application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            cd personal-api
+            git pull
+            ./deploy.sh
