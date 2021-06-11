@@ -21,6 +21,11 @@ pub struct Env {
     login: String,
     token: String,
     whoami: String,
+    contact_email: String,
+    email: String,
+    relay: String,
+    smtp_user: String,
+    smtp_pass: String,
     database_url: String,
 }
 
