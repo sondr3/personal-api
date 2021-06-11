@@ -1,5 +1,12 @@
-on: [push, pull_request]
 name: pipeline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
 
 jobs:
   check:
