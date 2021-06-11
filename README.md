@@ -23,11 +23,24 @@
 
 # Installation
 
-Clone the repo and do a `cargo run`.
+Clone the repo, copy `.env.example` to `.env` and do a `cargo run`.
 
 # Getting started
 
-Maybe later when it actually works.
+You probably shouldn't, but hey. You need to configure the environment 
+variables, I'll briefly explain them:
+
+```dotenv
+LOGIN=username                 # GitHub username
+TOKEN=token                    # GitHub token
+WHOAMI=name                    # Used for simple spam protection for the contact form
+CONTACT_EMAIL=mail@example.org # The email adress that contact form emails are sent from
+EMAIL=mail@example.org         # Your email adress
+RELAY=smtp.example.org         # The SMTP relay URL
+SMTP_USER=user                 # SMTP username
+SMTP_PASS=pass                 # SMTP password
+DATABASE_URL=sqlite:db.db      # Database file name
+```
 
 # License
 
