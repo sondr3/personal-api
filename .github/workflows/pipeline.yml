@@ -79,7 +79,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: musl-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
