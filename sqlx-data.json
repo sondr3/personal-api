@@ -1,11 +1,12 @@
 {
   "db": "PostgreSQL",
-  "188d0b919379e21e22e4fd1b34d6c1f29709b6bb2826082db05cdaaecf79a0c4": {
-    "query": "insert into contact (sender, message) values ($1, $2)",
+  "6bb98853d9a2aa4dd931af851400f6ea7cbf25f7d5ce2381185e9113c31c5235": {
+    "query": "insert into contact (name, sender, message) values ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
+          "Text",
           "Text",
           "Text"
         ]
