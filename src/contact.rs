@@ -18,7 +18,7 @@ pub struct ContactMe {
 
 async fn email_me(env: &Env, message: ContactMe) -> Result<()> {
     let email = Message::builder()
-        .from(format!("{} <{}>", "Eons::Contact", env.contact_email).parse()?)
+        .from(format!("{} <{}>", "noreply", env.contact_email).parse()?)
         .reply_to(format!("{} <{}>", message.name, message.from).parse()?)
         .to(format!("Sondre Nilsen <{}>", env.email).parse()?)
         .subject("New contact request")
