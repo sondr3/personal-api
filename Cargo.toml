@@ -2,7 +2,7 @@
 authors = ["Sondre Nilsen <nilsen.sondre@gmail.com>"]
 edition = "2018"
 name = "personal-api"
-version = "0.1.1"
+version = "0.1.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
