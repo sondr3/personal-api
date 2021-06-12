@@ -10,18 +10,19 @@ use sqlx::{Pool, Postgres};
 #[derive(Deserialize, Debug, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct ContactMe {
+    name: String,
     from: String,
     message: String,
     whoami: String,
 }
 
-async fn email_me(env: &Env, from: String, message: String) -> Result<()> {
+async fn email_me(env: &Env, message: ContactMe) -> Result<()> {
     let email = Message::builder()
-        .from(env.contact_email.parse()?)
-        .reply_to(from.parse()?)
-        .to(env.email.parse()?)
+        .from(format!("{} <{}>", "Eons::Contact", env.contact_email).parse()?)
+        .reply_to(format!("{} <{}>", message.name, message.from).parse()?)
+        .to(format!("Sondre Nilsen <{}>", env.email).parse()?)
         .subject("New contact request")
-        .body(message)?;
+        .body(message.message)?;
 
     let credentials = Credentials::new(env.smtp_user.clone(), env.smtp_pass.clone());
     let mailer: AsyncSmtpTransport<Tokio1Executor> =
@@ -48,7 +49,8 @@ pub async fn contact_me(
     }
 
     return match sqlx::query!(
-        "insert into contact (sender, message) values ($1, $2)",
+        "insert into contact (name, sender, message) values ($1, $2, $3)",
+        contact.name,
         contact.from,
         contact.message
     )
@@ -56,7 +58,7 @@ pub async fn contact_me(
     .await
     {
         Ok(_) => {
-            if let Err(e) = email_me(env, contact.from.clone(), contact.message.clone()).await {
+            if let Err(e) = email_me(env, contact.clone()).await {
                 error!("{}", e);
                 return Status::InternalServerError;
             }
