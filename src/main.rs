@@ -10,9 +10,10 @@ use rocket::{Build, Rocket};
 use serde::Deserialize;
 use sqlx::{ConnectOptions, PgPool, Pool, Postgres};
 use std::str::FromStr;
-
 use crate::{contact::contact_me, github::GitHub};
 use sqlx::postgres::PgConnectOptions;
+use rocket_cors::{AllowedOrigins, CorsOptions, };
+use rocket::http::Method;
 
 #[derive(Debug, Deserialize)]
 pub struct Env {
@@ -44,7 +45,15 @@ async fn initialize_db(env: &Env) -> Result<Pool<Postgres>> {
 }
 
 fn rocket(env: Env, pool: Pool<Postgres>) -> Rocket<Build> {
+    let allowed_origins = AllowedOrigins::some_exact(&["https://www.eons.io", "http://localhost:3000"]);
+    let cors = CorsOptions {
+        allowed_origins,
+        allowed_methods: vec![Method::Get, Method::Post].into_iter().map(From::from).collect(),
+        ..Default::default()
+    }.to_cors().unwrap();
+
     rocket::build()
+        .attach(cors)
         .manage(env)
         .manage(pool)
         .mount("/", routes![hello, contact_me])
