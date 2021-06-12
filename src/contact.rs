@@ -5,7 +5,7 @@ use lettre::{
     Tokio1Executor,
 };
 use rocket::{http::Status, serde::json::Json, serde::Deserialize, State};
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Postgres};
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(crate = "rocket::serde")]
@@ -39,7 +39,7 @@ async fn email_me(env: &Env, from: String, message: String) -> Result<()> {
 
 #[post("/contact", data = "<contact>")]
 pub async fn contact_me(
-    db: &State<Pool<Sqlite>>,
+    db: &State<Pool<Postgres>>,
     env: &State<Env>,
     contact: Json<ContactMe>,
 ) -> Status {
@@ -48,7 +48,7 @@ pub async fn contact_me(
     }
 
     return match sqlx::query!(
-        "insert into contact (sender, message) values (?, ?)",
+        "insert into contact (sender, message) values ($1, $2)",
         contact.from,
         contact.message
     )

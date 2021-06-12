@@ -1,11 +1,14 @@
 {
-  "db": "SQLite",
-  "081079421b876082f66da097ad662efbc878d8887112021309102197048b114a": {
-    "query": "insert into contact (sender, message) values (?, ?)",
+  "db": "PostgreSQL",
+  "188d0b919379e21e22e4fd1b34d6c1f29709b6bb2826082db05cdaaecf79a0c4": {
+    "query": "insert into contact (sender, message) values ($1, $2)",
     "describe": {
       "columns": [],
       "parameters": {
-        "Right": 2
+        "Left": [
+          "Text",
+          "Text"
+        ]
       },
       "nullable": []
     }

@@ -8,13 +8,11 @@ use anyhow::Result;
 use dotenv::dotenv;
 use rocket::{Build, Rocket};
 use serde::Deserialize;
-use sqlx::{
-    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous},
-    ConnectOptions, Pool, Sqlite, SqlitePool,
-};
+use sqlx::{ConnectOptions, Pool, Postgres, PgPool};
 use std::str::FromStr;
 
 use crate::{contact::contact_me, github::GitHub};
+use sqlx::postgres::PgConnectOptions;
 
 #[derive(Debug, Deserialize)]
 pub struct Env {
@@ -34,21 +32,18 @@ fn hello(name: &str) -> String {
     format!("Hello, {}!", name)
 }
 
-async fn initialize_db(env: &Env) -> Result<Pool<Sqlite>> {
-    let mut opts = SqliteConnectOptions::from_str(&env.database_url)?
-        .journal_mode(SqliteJournalMode::Wal)
-        .synchronous(SqliteSynchronous::Normal)
-        .create_if_missing(true);
+async fn initialize_db(env: &Env) -> Result<Pool<Postgres>> {
+    let mut opts = PgConnectOptions::from_str(&env.database_url)?;
     opts.disable_statement_logging();
 
-    let pool = SqlitePool::connect_with(opts).await?;
+    let pool = PgPool::connect_with(opts).await?;
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
     Ok(pool)
 }
 
-fn rocket(env: Env, pool: Pool<Sqlite>) -> Rocket<Build> {
+fn rocket(env: Env, pool: Pool<Postgres>) -> Rocket<Build> {
     rocket::build()
         .manage(env)
         .manage(pool)
