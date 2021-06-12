@@ -2,7 +2,7 @@
 authors = ["Sondre Nilsen <nilsen.sondre@gmail.com>"]
 edition = "2018"
 name = "personal-api"
-version = "0.1.3"
+version = "0.1.4"
 
 [dependencies]
 anyhow = "1.0.40"

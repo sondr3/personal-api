@@ -9,22 +9,14 @@ use crate::{contact::contact_me, github::GitHub};
 use anyhow::Result;
 use dotenv::dotenv;
 use rocket::{
-    Build,
-    Rocket,
-    Request,
-    serde::json::Json,
     http::{Method, Status},
+    serde::json::Json,
+    Build, Request, Rocket,
 };
-use serde::{Deserialize, Serialize};
-use sqlx::{
-    ConnectOptions,
-    PgPool,
-    Pool,
-    Postgres,
-    postgres::PgConnectOptions,
-};
-use std::str::FromStr;
 use rocket_cors::{AllowedOrigins, CorsOptions};
+use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgConnectOptions, ConnectOptions, PgPool, Pool, Postgres};
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize)]
 pub struct Env {
@@ -54,7 +46,7 @@ struct ErrorResponse {
 fn not_found(_: &Request) -> Json<ErrorResponse> {
     Json(ErrorResponse {
         reason: "Not found".to_string(),
-        status: Status::NotFound.code
+        status: Status::NotFound.code,
     })
 }
 
@@ -62,7 +54,7 @@ fn not_found(_: &Request) -> Json<ErrorResponse> {
 fn bad_request(_: &Request) -> Json<ErrorResponse> {
     Json(ErrorResponse {
         reason: "Bad request".to_string(),
-        status: Status::BadRequest.code
+        status: Status::BadRequest.code,
     })
 }
 
@@ -70,7 +62,7 @@ fn bad_request(_: &Request) -> Json<ErrorResponse> {
 fn internal_error(_: &Request) -> Json<ErrorResponse> {
     Json(ErrorResponse {
         reason: "Internal server error".to_string(),
-        status: Status::InternalServerError.code
+        status: Status::InternalServerError.code,
     })
 }
 
@@ -91,18 +83,27 @@ async fn initialize_db(env: &Env) -> Result<Pool<Postgres>> {
 }
 
 fn rocket(env: Env, pool: Pool<Postgres>) -> Rocket<Build> {
-    let allowed_origins = AllowedOrigins::some_exact(&["https://www.eons.io", "http://localhost:3000"]);
+    let allowed_origins =
+        AllowedOrigins::some_exact(&["https://www.eons.io", "http://localhost:3000"]);
     let cors = CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post].into_iter().map(From::from).collect(),
+        allowed_methods: vec![Method::Get, Method::Post]
+            .into_iter()
+            .map(From::from)
+            .collect(),
         ..Default::default()
-    }.to_cors().unwrap();
+    }
+    .to_cors()
+    .unwrap();
 
     rocket::build()
         .attach(cors)
         .manage(env)
         .manage(pool)
-        .register("/", catchers![default_catcher, not_found, bad_request, internal_error])
+        .register(
+            "/",
+            catchers![default_catcher, not_found, bad_request, internal_error],
+        )
         .mount("/", routes![hello, contact_me])
 }
 
