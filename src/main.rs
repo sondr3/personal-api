@@ -8,7 +8,7 @@ use anyhow::Result;
 use dotenv::dotenv;
 use rocket::{Build, Rocket};
 use serde::Deserialize;
-use sqlx::{ConnectOptions, Pool, Postgres, PgPool};
+use sqlx::{ConnectOptions, PgPool, Pool, Postgres};
 use std::str::FromStr;
 
 use crate::{contact::contact_me, github::GitHub};
