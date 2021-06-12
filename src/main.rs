@@ -4,16 +4,27 @@ extern crate rocket;
 mod contact;
 mod github;
 
+use crate::{contact::contact_me, github::GitHub};
+
 use anyhow::Result;
 use dotenv::dotenv;
-use rocket::{Build, Rocket};
-use serde::Deserialize;
-use sqlx::{ConnectOptions, PgPool, Pool, Postgres};
+use rocket::{
+    Build,
+    Rocket,
+    Request,
+    serde::json::Json,
+    http::{Method, Status},
+};
+use serde::{Deserialize, Serialize};
+use sqlx::{
+    ConnectOptions,
+    PgPool,
+    Pool,
+    Postgres,
+    postgres::PgConnectOptions,
+};
 use std::str::FromStr;
-use crate::{contact::contact_me, github::GitHub};
-use sqlx::postgres::PgConnectOptions;
-use rocket_cors::{AllowedOrigins, CorsOptions, };
-use rocket::http::Method;
+use rocket_cors::{AllowedOrigins, CorsOptions};
 
 #[derive(Debug, Deserialize)]
 pub struct Env {
@@ -31,6 +42,41 @@ pub struct Env {
 #[get("/hello/<name>")]
 fn hello(name: &str) -> String {
     format!("Hello, {}!", name)
+}
+
+#[derive(Serialize)]
+struct ErrorResponse {
+    reason: String,
+    status: u16,
+}
+
+#[catch(404)]
+fn not_found(_: &Request) -> Json<ErrorResponse> {
+    Json(ErrorResponse {
+        reason: "Not found".to_string(),
+        status: Status::NotFound.code
+    })
+}
+
+#[catch(400)]
+fn bad_request(_: &Request) -> Json<ErrorResponse> {
+    Json(ErrorResponse {
+        reason: "Bad request".to_string(),
+        status: Status::BadRequest.code
+    })
+}
+
+#[catch(500)]
+fn internal_error(_: &Request) -> Json<ErrorResponse> {
+    Json(ErrorResponse {
+        reason: "Internal server error".to_string(),
+        status: Status::InternalServerError.code
+    })
+}
+
+#[catch(default)]
+fn default_catcher(status: Status, _: &Request) -> Status {
+    status
 }
 
 async fn initialize_db(env: &Env) -> Result<Pool<Postgres>> {
@@ -56,6 +102,7 @@ fn rocket(env: Env, pool: Pool<Postgres>) -> Rocket<Build> {
         .attach(cors)
         .manage(env)
         .manage(pool)
+        .register("/", catchers![default_catcher, not_found, bad_request, internal_error])
         .mount("/", routes![hello, contact_me])
 }
 
