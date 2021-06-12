@@ -39,8 +39,15 @@ EMAIL=mail@example.org         # Your email adress
 RELAY=smtp.example.org         # The SMTP relay URL
 SMTP_USER=user                 # SMTP username
 SMTP_PASS=pass                 # SMTP password
-DATABASE_URL=sqlite:db.db      # Database file name
+POSTGRES_DB=personal           # Database name
+POSTGRES_USER=sondre           # Database username
+POSTGRES_PASSWORD=password     # Database password
+POSTGRES_HOST=localhost        # Database host
+DATABASE_URL=postgresql://sondre:password@localhost:5432/personal?schema=public # Used to connect via API
 ```
+
+**NOTE:** The `url` should be `localhost` in the `DATABASE_URL` when using the 
+`docker-compose.local.yml` file and then `personal_db` when using `docker-compose.yml`.
 
 # License
 

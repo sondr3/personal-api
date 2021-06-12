@@ -4,6 +4,8 @@ ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_PORT=8081
 ENV ROCKET_PROFILE=release
 
+EXPOSE 8081
+
 ARG version=v0.1.0
 
 RUN apt-get update && apt-get install wget -y

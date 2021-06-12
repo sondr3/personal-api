@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  personal_db:
+    container_name: personal_db
+    image: postgres:13.3
+    volumes:
+      - personal_api_volume:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: pg_isready -U postgres
+    env_file: .env
+
+  api:
+    container_name: personal_api
+    build:
+      context: .
+      args:
+        version: "v${API_VERSION}"
+    depends_on:
+      personal_db:
+        condition: service_healthy
+    links:
+      - personal_db
+    ports:
+    - 8081:8081
+    env_file: .env
+
+volumes:
+  personal_api_volume:

@@ -3,18 +3,9 @@
 echo "Redeploying personal API!"
 
 echo "Getting version"
-version=$(awk -F'[ ="]+' '$1 == "version" { print $2 }' Cargo.toml)
-
-echo "Building new docker container..."
-docker build --build-arg version=v"$version" -t personal-api . | cat
-
-echo "Stopping service..."
-docker stop personal-api
-
-echo "Removing old container..."
-docker container rm personal-api
+VERSION=$(awk -F'[ ="]+' '$1 == "version" { print $2 }' Cargo.toml)
 
 echo "Redeploying service"
-docker run -itd --restart unless-stopped -p 8081:8081 --name personal-api personal-api
+API_VERSION=${VERSION} docker-compose up -d --build
 
 echo "And we're live again!"

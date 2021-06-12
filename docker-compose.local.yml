@@ -1,0 +1,14 @@
+version: "3.7"
+
+services:
+  personal_db_local:
+    container_name: "personal_db_local"
+    image: postgres:13.3
+    volumes:
+      - personal_db_local:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    env_file: .env
+
+volumes:
+  personal_db_local:
