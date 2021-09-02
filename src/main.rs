@@ -85,7 +85,7 @@ async fn main() -> Result<(), BoxError> {
         Err(e) => panic!("{}", e),
     };
 
-    if std::env::var("prod").is_ok() {
+    if std::env::var("LOCAL").is_ok() {
         let mut gh = GitHub::new();
         gh.update(&env.login, &env.token).await.unwrap();
     }

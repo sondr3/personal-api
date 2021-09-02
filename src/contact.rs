@@ -24,15 +24,17 @@ async fn email_me(env: &Env, message: ContactMe) -> Result<()> {
         .subject("New contact request")
         .body(message.message)?;
 
-    let credentials = Credentials::new(env.smtp_user.clone(), env.smtp_pass.clone());
-    let mailer: AsyncSmtpTransport<Tokio1Executor> =
-        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&env.relay)?
-            .credentials(credentials)
-            .build();
+    if std::env::var("LOCAL").is_err() {
+        let credentials = Credentials::new(env.smtp_user.clone(), env.smtp_pass.clone());
+        let mailer: AsyncSmtpTransport<Tokio1Executor> =
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&env.relay)?
+                .credentials(credentials)
+                .build();
 
-    match mailer.send(email).await {
-        Ok(_) => tracing::info!("Email successfully sent"),
-        Err(e) => eprintln!("Could not send email: {}", e),
+        match mailer.send(email).await {
+            Ok(_) => tracing::info!("Email successfully sent"),
+            Err(e) => eprintln!("Could not send email: {}", e),
+        }
     }
 
     Ok(())
