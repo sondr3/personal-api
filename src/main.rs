@@ -1,24 +1,28 @@
-#[macro_use]
-extern crate rocket;
-
 mod contact;
 mod github;
 
 use crate::{contact::contact_me, github::GitHub};
 
 use anyhow::Result;
-use dotenv::dotenv;
-use rocket::{
-    http::{Method, Status},
-    serde::json::Json,
-    Build, Request, Rocket,
+use axum::{
+    extract::Path,
+    handler::{get, post, Handler},
+    http::StatusCode,
+    response::IntoResponse,
+    AddExtensionLayer, Json, Router,
 };
-use rocket_cors::{AllowedOrigins, CorsOptions};
+use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgConnectOptions, ConnectOptions, PgPool, Pool, Postgres};
-use std::str::FromStr;
+use std::{convert::Infallible, net::SocketAddr, str::FromStr, time::Duration};
+use tower::{BoxError, ServiceBuilder};
+use tower_http::{
+    compression::CompressionLayer, decompression::DecompressionLayer, trace::TraceLayer,
+};
 
-#[derive(Debug, Deserialize)]
+pub type DbPool = Pool<Postgres>;
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Env {
     login: String,
     token: String,
@@ -31,47 +35,27 @@ pub struct Env {
     database_url: String,
 }
 
-#[get("/hello/<name>")]
-fn hello(name: &str) -> String {
+async fn hello(Path(name): Path<String>) -> String {
     format!("Hello, {}!", name)
 }
 
 #[derive(Serialize)]
 struct ErrorResponse {
-    reason: String,
+    reason: &'static str,
     status: u16,
 }
 
-#[catch(404)]
-fn not_found(_: &Request) -> Json<ErrorResponse> {
-    Json(ErrorResponse {
-        reason: "Not found".to_string(),
-        status: Status::NotFound.code,
-    })
+async fn not_found() -> impl IntoResponse {
+    let status_code = StatusCode::NOT_FOUND;
+    let response = Json(ErrorResponse {
+        reason: status_code.canonical_reason().unwrap_or_default(),
+        status: status_code.as_u16(),
+    });
+
+    (status_code, response)
 }
 
-#[catch(400)]
-fn bad_request(_: &Request) -> Json<ErrorResponse> {
-    Json(ErrorResponse {
-        reason: "Bad request".to_string(),
-        status: Status::BadRequest.code,
-    })
-}
-
-#[catch(500)]
-fn internal_error(_: &Request) -> Json<ErrorResponse> {
-    Json(ErrorResponse {
-        reason: "Internal server error".to_string(),
-        status: Status::InternalServerError.code,
-    })
-}
-
-#[catch(default)]
-fn default_catcher(status: Status, _: &Request) -> Status {
-    status
-}
-
-async fn initialize_db(env: &Env) -> Result<Pool<Postgres>> {
+async fn initialize_db(env: &Env) -> Result<DbPool> {
     let mut opts = PgConnectOptions::from_str(&env.database_url)?;
     opts.disable_statement_logging();
 
@@ -82,33 +66,13 @@ async fn initialize_db(env: &Env) -> Result<Pool<Postgres>> {
     Ok(pool)
 }
 
-fn rocket(env: Env, pool: Pool<Postgres>) -> Rocket<Build> {
-    let allowed_origins =
-        AllowedOrigins::some_exact(&["https://www.eons.io", "http://localhost:3000"]);
-    let cors = CorsOptions {
-        allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post]
-            .into_iter()
-            .map(From::from)
-            .collect(),
-        ..Default::default()
+#[tokio::main]
+async fn main() -> Result<(), BoxError> {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "personal_api=debug,tower_http=debug");
     }
-    .to_cors()
-    .unwrap();
 
-    rocket::build()
-        .attach(cors)
-        .manage(env)
-        .manage(pool)
-        .register(
-            "/",
-            catchers![default_catcher, not_found, bad_request, internal_error],
-        )
-        .mount("/", routes![hello, contact_me])
-}
-
-#[rocket::main]
-async fn main() {
+    tracing_subscriber::fmt::init();
     dotenv().ok();
 
     let env = match envy::from_env::<Env>() {
@@ -126,8 +90,41 @@ async fn main() {
         gh.update(&env.login, &env.token).await.unwrap();
     }
 
-    if let Err(e) = rocket(env, pool).launch().await {
-        eprintln!("Rocket could not launch: {}", e);
-        drop(e);
-    }
+    let app = Router::new()
+        .route("/hello/:name", get(hello))
+        .route("/contact", post(contact_me))
+        .layer(
+            ServiceBuilder::new()
+                .timeout(Duration::from_secs(10))
+                .layer(TraceLayer::new_for_http())
+                .layer(CompressionLayer::new())
+                .layer(DecompressionLayer::new())
+                .layer(AddExtensionLayer::new(pool))
+                .layer(AddExtensionLayer::new(env))
+                .into_inner(),
+        )
+        .handle_error(|error: BoxError| {
+            let result = if error.is::<tower::timeout::error::Elapsed>() {
+                Ok(StatusCode::REQUEST_TIMEOUT)
+            } else {
+                Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Unhandled internal error: {}", error),
+                ))
+            };
+
+            Ok::<_, Infallible>(result)
+        })
+        .check_infallible();
+
+    let app = app.or(not_found.into_service());
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    tracing::debug!("Listening on http://{}", addr);
+
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await?;
+
+    Ok(())
 }

@@ -1,14 +1,14 @@
-use crate::Env;
+use crate::{DbPool, Env};
 use anyhow::Result;
+use axum::{extract::Extension, response::IntoResponse, Json};
 use lettre::{
     transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
     Tokio1Executor,
 };
-use rocket::{http::Status, serde::json::Json, serde::Deserialize, State};
-use sqlx::{Pool, Postgres};
+use reqwest::StatusCode;
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
-#[serde(crate = "rocket::serde")]
 pub struct ContactMe {
     name: String,
     from: String,
@@ -31,21 +31,20 @@ async fn email_me(env: &Env, message: ContactMe) -> Result<()> {
             .build();
 
     match mailer.send(email).await {
-        Ok(_) => info!("Email successfully sent"),
+        Ok(_) => tracing::info!("Email successfully sent"),
         Err(e) => eprintln!("Could not send email: {}", e),
     }
 
     Ok(())
 }
 
-#[post("/contact", data = "<contact>")]
 pub async fn contact_me(
-    db: &State<Pool<Postgres>>,
-    env: &State<Env>,
     contact: Json<ContactMe>,
-) -> Status {
+    Extension(db): Extension<DbPool>,
+    Extension(env): Extension<Env>,
+) -> impl IntoResponse {
     if contact.whoami.to_lowercase() != env.whoami.to_lowercase() {
-        return Status::BadRequest;
+        return StatusCode::BAD_REQUEST;
     }
 
     return match sqlx::query!(
@@ -54,20 +53,20 @@ pub async fn contact_me(
         contact.from,
         contact.message
     )
-    .execute(&**db)
+    .execute(&db)
     .await
     {
         Ok(_) => {
-            if let Err(e) = email_me(env, contact.clone()).await {
-                error!("{}", e);
-                return Status::InternalServerError;
+            if let Err(e) = email_me(&env, contact.0.clone()).await {
+                tracing::error!("{}", e);
+                return StatusCode::INTERNAL_SERVER_ERROR;
             }
 
-            Status::Ok
+            StatusCode::OK
         }
         Err(e) => {
-            error!("{}", e);
-            Status::InternalServerError
+            tracing::error!("{}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
         }
     };
 }
