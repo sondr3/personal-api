@@ -5,18 +5,18 @@ name = "personal-api"
 version = "0.1.4"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.43"
 axum = "0.2.3"
 dotenv = "0.15.0"
-envy = "0.4"
-graphql_client = "0.9.0"
+envy = "0.4.2"
+graphql_client = "0.10.0"
 lettre = { version = "0.10.0-rc.3", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
-reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1.0.126", features = ["derive"] }
-sqlx = { version = "0.5", features = ["runtime-tokio-rustls", "postgres", "uuid", "offline"] }
-tokio = { version = "1.0", features = ["full"] }
-tower = { version = "0.4", features = ["util", "timeout"] }
-tower-http = { version = "0.1", features = ["full"] }
-tracing = "0.1"
-tracing-subscriber = "0.2"
-uuid = { version = "0.8", features = ["serde", "v4"] }
+reqwest = { version = "0.11.4", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0.130", features = ["derive"] }
+sqlx = { version = "0.5.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "offline"] }
+tokio = { version = "1.11.0", features = ["full"] }
+tower = { version = "0.4.8", features = ["util", "timeout"] }
+tower-http = { version = "0.1.1", features = ["full"] }
+tracing = "0.1.26"
+tracing-subscriber = "0.2.20"
+uuid = { version = "0.8.2", features = ["serde", "v4"] }
