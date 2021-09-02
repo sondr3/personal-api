@@ -64,7 +64,7 @@ impl GitHub {
         })
     }
 
-    pub async fn update(&mut self, login: &str, token: &str) -> Result<()> {
+    pub async fn _update(&mut self, login: &str, token: &str) -> Result<()> {
         self.contributions = GitHub::query_contributions(login, token).await?;
         self.repositories = GitHub::query_repositories(login, token).await?;
 

@@ -75,15 +75,8 @@ async fn main() -> Result<(), BoxError> {
     tracing_subscriber::fmt::init();
     dotenv().ok();
 
-    let env = match envy::from_env::<Env>() {
-        Ok(env) => env,
-        Err(e) => panic!("{}", e),
-    };
-
-    let pool = match initialize_db(&env).await {
-        Ok(p) => p,
-        Err(e) => panic!("{}", e),
-    };
+    let env = envy::from_env::<Env>()?;
+    let pool = initialize_db(&env).await?;
 
     if std::env::var("LOCAL").is_ok() {
         GitHub::new(&env.login, &env.token).await?;
