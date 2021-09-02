@@ -86,8 +86,7 @@ async fn main() -> Result<(), BoxError> {
     };
 
     if std::env::var("LOCAL").is_ok() {
-        let mut gh = GitHub::new();
-        gh.update(&env.login, &env.token).await.unwrap();
+        GitHub::new(&env.login, &env.token).await?;
     }
 
     let app = Router::new()

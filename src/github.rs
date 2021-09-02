@@ -28,78 +28,75 @@ struct ContributionsQuery;
 struct RepositoriesQuery;
 
 pub struct GitHub {
-    pub contributions: Option<ContributionsQueryUserContributionsCollection>,
-    pub repositories: Option<RepositoriesQueryUserRepositories>,
+    pub contributions: ContributionsQueryUserContributionsCollection,
+    pub repositories: RepositoriesQueryUserRepositories,
 }
 
-impl Default for GitHub {
-    fn default() -> Self {
-        Self::new()
-    }
+async fn query_github<V: Serialize, T: GraphQLQuery>(
+    token: &str,
+    query: QueryBody<V>,
+) -> Result<T::ResponseData> {
+    let client = reqwest::Client::builder()
+        .user_agent(format!("sondr3/personal-api#{}", env!("CARGO_PKG_VERSION")))
+        .build()?;
+
+    let res = client
+        .post("https://api.github.com/graphql")
+        .bearer_auth(token)
+        .json(&query)
+        .send()
+        .await?;
+
+    res.error_for_status_ref()?;
+
+    let body: Response<T::ResponseData> = res.json().await?;
+    Ok(body.data.expect("missing response data"))
 }
 
 impl GitHub {
-    pub fn new() -> Self {
-        Self {
-            contributions: None,
-            repositories: None,
-        }
+    pub async fn new(login: &str, token: &str) -> Result<GitHub> {
+        let repositories = GitHub::query_repositories(login, token).await?;
+        let contributions = GitHub::query_contributions(login, token).await?;
+
+        Ok(GitHub {
+            repositories,
+            contributions,
+        })
     }
 
     pub async fn update(&mut self, login: &str, token: &str) -> Result<()> {
-        self.query_contributions(login, token).await?;
-        self.query_repositories(login, token).await?;
+        self.contributions = GitHub::query_contributions(login, token).await?;
+        self.repositories = GitHub::query_repositories(login, token).await?;
 
         Ok(())
     }
 
-    async fn query<V: Serialize, T: GraphQLQuery>(
-        &mut self,
+    async fn query_repositories(
+        login: &str,
         token: &str,
-        query: QueryBody<V>,
-    ) -> Result<T::ResponseData> {
-        let client = reqwest::Client::builder()
-            .user_agent(format!("sondr3/personal-api#{}", env!("CARGO_PKG_VERSION")))
-            .build()?;
-
-        let res = client
-            .post("https://api.github.com/graphql")
-            .bearer_auth(token)
-            .json(&query)
-            .send()
-            .await?;
-
-        res.error_for_status_ref()?;
-
-        let body: Response<T::ResponseData> = res.json().await?;
-        Ok(body.data.expect("missing response data"))
-    }
-
-    async fn query_repositories(&mut self, login: &str, token: &str) -> Result<()> {
+    ) -> Result<RepositoriesQueryUserRepositories> {
         let query = RepositoriesQuery::build_query(repositories_query::Variables {
             login: login.to_string(),
         });
 
-        let res: repositories_query::ResponseData = self
-            .query::<repositories_query::Variables, RepositoriesQuery>(token, query)
-            .await?;
+        let res: repositories_query::ResponseData =
+            query_github::<repositories_query::Variables, RepositoriesQuery>(token, query).await?;
 
-        self.repositories = Some(res.user.unwrap().repositories);
-
-        Ok(())
+        Ok(res.user.unwrap().repositories)
     }
 
-    async fn query_contributions(&mut self, login: &str, token: &str) -> Result<()> {
+    async fn query_contributions(
+        login: &str,
+        token: &str,
+    ) -> Result<ContributionsQueryUserContributionsCollection> {
         let query = ContributionsQuery::build_query(contributions_query::Variables {
             login: login.to_string(),
         });
 
-        let res: contributions_query::ResponseData = self
-            .query::<contributions_query::Variables, ContributionsQuery>(token, query)
-            .await?;
+        let res: contributions_query::ResponseData =
+            query_github::<contributions_query::Variables, ContributionsQuery>(token, query)
+                .await?;
 
-        self.contributions = Some(res.user.unwrap().contributions_collection);
-
-        Ok(())
+        Ok(res.user.unwrap().contributions_collection)
     }
 }
