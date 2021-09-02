@@ -1,5 +1,23 @@
 {
   "db": "PostgreSQL",
+  "64bfc99e6fdea04ecb512bc3dea05e55f547865437f175e2a8ade1c536aff38e": {
+    "query": "\ninsert into repository (name, name_with_owner, license, stars, primary_language, languages, created_at)\nvalues ($1, $2, $3, $4, $5, $6, $7)\non conflict (name)\ndo update\nset name = $1,\n    name_with_owner = $2,\n    license = $3,\n    stars = $4,\n    primary_language = $5,\n    languages = $6,\n    created_at = $7",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Int4",
+          "Text",
+          "TextArray",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "6bb98853d9a2aa4dd931af851400f6ea7cbf25f7d5ce2381185e9113c31c5235": {
     "query": "insert into contact (name, sender, message) values ($1, $2, $3)",
     "describe": {

@@ -1,7 +1,7 @@
 mod contact;
 mod github;
 
-use crate::{contact::contact_me, github::GitHub};
+use crate::{contact::contact_me, github::api::GitHub};
 
 use anyhow::Result;
 use axum::{

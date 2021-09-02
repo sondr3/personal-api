@@ -1,4 +1,4 @@
-use crate::github::{
+use crate::github::api::{
     contributions_query::ContributionsQueryUserContributionsCollection,
     repositories_query::RepositoriesQueryUserRepositories,
 };
@@ -17,7 +17,7 @@ type URI = String;
     query_path = "queries/Contributions.graphql",
     response_derives = "Debug"
 )]
-struct ContributionsQuery;
+pub struct ContributionsQuery;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -25,7 +25,7 @@ struct ContributionsQuery;
     query_path = "queries/Repositories.graphql",
     response_derives = "Debug"
 )]
-struct RepositoriesQuery;
+pub struct RepositoriesQuery;
 
 pub struct GitHub {
     pub contributions: ContributionsQueryUserContributionsCollection,
