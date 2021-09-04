@@ -1,5 +1,11 @@
 use crate::{github::api::repositories_query::RepositoriesQueryUserRepositories, DbPool};
 use anyhow::{bail, Result};
+use axum::{
+    extract::{Extension, Path},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
 use serde::Serialize;
 
 fn rename_language(language: String) -> String {
@@ -10,6 +16,7 @@ fn rename_language(language: String) -> String {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Repository {
     name: String,
     owner: String,
@@ -18,6 +25,24 @@ pub struct Repository {
     primary_language: String,
     languages: Vec<String>,
     created_at: String,
+}
+
+pub async fn get_repo(
+    Path((owner, name)): Path<(String, String)>,
+    Extension(db): Extension<DbPool>,
+) -> impl IntoResponse {
+    match sqlx::query_as!(
+        Repository,
+        "select * from repository where name = $1 and owner = $2",
+        name,
+        owner
+    )
+    .fetch_optional(&db)
+    .await
+    {
+        Ok(Some(repo)) => Ok((StatusCode::OK, Json(repo))),
+        _ => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 impl Repository {

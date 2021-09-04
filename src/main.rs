@@ -1,7 +1,10 @@
 mod contact;
 mod github;
 
-use crate::{contact::contact_me, github::api::GitHub};
+use crate::{
+    contact::contact_me,
+    github::{api::GitHub, repository::get_repo},
+};
 
 use anyhow::Result;
 use axum::{
@@ -86,6 +89,7 @@ async fn main() -> Result<(), BoxError> {
     let app = Router::new()
         .route("/hello/:name", get(hello))
         .route("/contact", post(contact_me))
+        .route("/repo/:owner/:name", get(get_repo))
         .layer(
             ServiceBuilder::new()
                 .timeout(Duration::from_secs(10))
