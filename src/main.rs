@@ -27,6 +27,7 @@ pub type DbPool = Pool<Postgres>;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Env {
+    port: u16,
     login: String,
     token: String,
     whoami: String,
@@ -79,6 +80,7 @@ async fn main() -> Result<(), BoxError> {
     dotenv().ok();
 
     let env = envy::from_env::<Env>()?;
+    let port = env.port;
     let pool = initialize_db(&env).await?;
 
     if std::env::var("LOCAL").is_ok() {
@@ -116,7 +118,7 @@ async fn main() -> Result<(), BoxError> {
 
     let app = app.or(not_found.into_service());
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::debug!("Listening on http://{}", addr);
 
     axum::Server::bind(&addr)
