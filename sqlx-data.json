@@ -1,7 +1,64 @@
 {
   "db": "PostgreSQL",
-  "64bfc99e6fdea04ecb512bc3dea05e55f547865437f175e2a8ade1c536aff38e": {
-    "query": "\ninsert into repository (name, name_with_owner, license, stars, primary_language, languages, created_at)\nvalues ($1, $2, $3, $4, $5, $6, $7)\non conflict (name)\ndo update\nset name = $1,\n    name_with_owner = $2,\n    license = $3,\n    stars = $4,\n    primary_language = $5,\n    languages = $6,\n    created_at = $7",
+  "0da01c6d9cd9fbf53afc33bd41bfb42608daeaa548441fc2192152c343eddb04": {
+    "query": "select * from repository where name = $1 and owner = $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "owner",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "license",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "stars",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
+          "name": "primary_language",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "languages",
+          "type_info": "TextArray"
+        },
+        {
+          "ordinal": 6,
+          "name": "created_at",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "258c05755fcd2e0296a0d7ef7e30c20f2902516b0fe677ccdb6e52f19cd59600": {
+    "query": "\ninsert into repository (name, owner, license, stars, primary_language, languages, created_at)\nvalues ($1, $2, $3, $4, $5, $6, $7)\non conflict (name, owner)\ndo update\nset name = $1,\n    owner = $2,\n    license = $3,\n    stars = $4,\n    primary_language = $5,\n    languages = $6,\n    created_at = $7",
     "describe": {
       "columns": [],
       "parameters": {
