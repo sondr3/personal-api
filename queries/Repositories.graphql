@@ -9,6 +9,10 @@ query RepositoriesQuery($login: String!) {
     ) {
       nodes {
         name
+        owner {
+          __typename
+          login
+        }
         nameWithOwner
         createdAt
         languages(first: 3) {

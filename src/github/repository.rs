@@ -12,7 +12,7 @@ fn rename_language(language: String) -> String {
 #[derive(Debug, Serialize)]
 pub struct Repository {
     name: String,
-    repository: String,
+    owner: String,
     license: String,
     stars: i32,
     primary_language: String,
@@ -24,24 +24,24 @@ impl Repository {
     pub async fn upsert(&self, db: &DbPool) -> Result<()> {
         let res = sqlx::query!(
             r#"
-insert into repository (name, name_with_owner, license, stars, primary_language, languages, created_at)
+insert into repository (name, owner, license, stars, primary_language, languages, created_at)
 values ($1, $2, $3, $4, $5, $6, $7)
-on conflict (name)
+on conflict (name, owner)
 do update
 set name = $1,
-    name_with_owner = $2,
+    owner = $2,
     license = $3,
     stars = $4,
     primary_language = $5,
     languages = $6,
     created_at = $7"#,
-		self.name,
-		self.repository,
-		self.license,
-		self.stars,
-		self.primary_language,
-		&self.languages,
-		self.created_at
+            self.name,
+            self.owner,
+            self.license,
+            self.stars,
+            self.primary_language,
+            &self.languages,
+            self.created_at
         )
         .execute(db)
         .await?;
@@ -67,7 +67,7 @@ set name = $1,
 
                         return Ok(Repository {
                             name: repo.name.clone(),
-                            repository: repo.name_with_owner.clone(),
+                            owner: repo.owner.login.clone(),
                             license: repo
                                 .license_info
                                 .as_ref()
