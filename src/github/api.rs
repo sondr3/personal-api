@@ -1,10 +1,15 @@
-use crate::github::api::{
-    contributions_query::ContributionsQueryUserContributionsCollection,
-    repositories_query::RepositoriesQueryUserRepositories,
+use crate::{
+    github::api::{
+        contributions_query::ContributionsQueryUserContributionsCollection,
+        repositories_query::RepositoriesQueryUserRepositories,
+    },
+    DbPool,
 };
 use anyhow::Result;
 use graphql_client::*;
 use serde::Serialize;
+
+use super::repository::Repository;
 
 type Date = String;
 type DateTime = String;
@@ -64,9 +69,21 @@ impl GitHub {
         })
     }
 
-    pub async fn _update(&mut self, login: &str, token: &str) -> Result<()> {
+    pub async fn update(&mut self, login: &str, token: &str, db: &DbPool) -> Result<()> {
         self.contributions = GitHub::query_contributions(login, token).await?;
         self.repositories = GitHub::query_repositories(login, token).await?;
+
+        self.write_to_database(db).await?;
+
+        Ok(())
+    }
+
+    async fn write_to_database(&self, db: &DbPool) -> Result<()> {
+        let repos = Repository::from_query(&self.repositories)?;
+
+        for repo in repos {
+            repo.upsert(db).await?;
+        }
 
         Ok(())
     }

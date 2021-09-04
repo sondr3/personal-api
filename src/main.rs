@@ -79,7 +79,8 @@ async fn main() -> Result<(), BoxError> {
     let pool = initialize_db(&env).await?;
 
     if std::env::var("LOCAL").is_ok() {
-        GitHub::new(&env.login, &env.token).await?;
+        let mut gh = GitHub::new(&env.login, &env.token).await?;
+        gh.update(&env.login, &env.token, &pool).await?;
     }
 
     let app = Router::new()

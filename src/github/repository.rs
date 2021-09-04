@@ -2,6 +2,13 @@ use crate::{github::api::repositories_query::RepositoriesQueryUserRepositories, 
 use anyhow::{bail, Result};
 use serde::Serialize;
 
+fn rename_language(language: String) -> String {
+    match language.as_str() {
+        "Dockerfile" => "Docker".to_string(),
+        _ => language,
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct Repository {
     name: String,
@@ -14,7 +21,7 @@ pub struct Repository {
 }
 
 impl Repository {
-    async fn _upsert(&self, db: DbPool) -> Result<()> {
+    pub async fn upsert(&self, db: &DbPool) -> Result<()> {
         let res = sqlx::query!(
             r#"
 insert into repository (name, name_with_owner, license, stars, primary_language, languages, created_at)
@@ -36,7 +43,7 @@ set name = $1,
 		&self.languages,
 		self.created_at
         )
-        .execute(&db)
+        .execute(db)
         .await?;
 
         if res.rows_affected() > 0 {
@@ -46,12 +53,18 @@ set name = $1,
         }
     }
 
-    fn _from_query(repositories: &RepositoriesQueryUserRepositories) -> Result<Vec<Repository>> {
+    pub fn from_query(repositories: &RepositoriesQueryUserRepositories) -> Result<Vec<Repository>> {
         if let Some(nodes) = &repositories.nodes {
-            let things: std::result::Result<Vec<_>, _> = nodes
+            let repos: std::result::Result<Vec<_>, _> = nodes
                 .iter()
                 .map(|node| {
                     if let Some(repo) = node {
+                        let primary_language = repo
+                            .primary_language
+                            .as_ref()
+                            .map(|l| l.name.clone())
+                            .unwrap_or_else(|| "Unknown".to_string());
+
                         return Ok(Repository {
                             name: repo.name.clone(),
                             repository: repo.name_with_owner.clone(),
@@ -61,13 +74,27 @@ set name = $1,
                                 .map(|l| l.name.clone())
                                 .unwrap_or_else(|| "None".to_string()),
                             stars: repo.stargazer_count as i32,
-                            primary_language: repo
-                                .primary_language
-                                .as_ref()
-                                .map(|l| l.name.clone())
-                                .unwrap_or_else(|| "Unknown".to_string()),
-                            languages: vec![],
                             created_at: repo.created_at.clone(),
+                            languages: repo
+                                .languages
+                                .as_ref()
+                                .map(|l| {
+                                    l.nodes
+                                        .as_ref()
+                                        .map(|l| {
+                                            l.iter()
+                                                .map(|lang| {
+                                                    lang.as_ref()
+                                                        .map(|l| rename_language(l.name.clone()))
+                                                })
+                                                .filter(|l| l != &Some(primary_language.clone()))
+                                                .flatten()
+                                                .collect::<Vec<String>>()
+                                        })
+                                        .unwrap_or_default()
+                                })
+                                .unwrap_or_default(),
+                            primary_language,
                         });
                     } else {
                         Err(())
@@ -75,7 +102,7 @@ set name = $1,
                 })
                 .collect();
 
-            return match things {
+            return match repos {
                 Ok(repos) => Ok(repos),
                 Err(_) => bail!("Could not convert repositories"),
             };
