@@ -29,30 +29,19 @@ jobs:
       - uses: Swatinem/rust-cache@v1
 
       - name: formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+        run: cargo check
 
       - name: clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+        run: cargo clippy
 
       - name: build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+        run: cargo test --no-run --locked
 
       - name: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test --quiet
 
   github_build:
     needs: check
@@ -85,10 +74,7 @@ jobs:
         run: sudo apt-get install -y musl-tools libssl-dev pkg-config
 
       - name: Build target
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Prepare build artifacts
         run: |

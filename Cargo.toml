@@ -4,6 +4,9 @@ edition = "2018"
 name = "personal-api"
 version = "0.2.1"
 
+[profile.dev]
+debug = 0
+
 [dependencies]
 anyhow = "1.0.43"
 axum = "0.2.3"
