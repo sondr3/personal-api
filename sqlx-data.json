@@ -38,6 +38,16 @@
           "ordinal": 6,
           "name": "created_at",
           "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "url",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "license_id",
+          "type_info": "Text"
         }
       ],
       "parameters": {
@@ -53,12 +63,14 @@
         false,
         false,
         false,
+        false,
+        false,
         false
       ]
     }
   },
-  "258c05755fcd2e0296a0d7ef7e30c20f2902516b0fe677ccdb6e52f19cd59600": {
-    "query": "\ninsert into repository (name, owner, license, stars, primary_language, languages, created_at)\nvalues ($1, $2, $3, $4, $5, $6, $7)\non conflict (name, owner)\ndo update\nset name = $1,\n    owner = $2,\n    license = $3,\n    stars = $4,\n    primary_language = $5,\n    languages = $6,\n    created_at = $7",
+  "17d47211846647e46726f8a2f124310da6ac5ab8d02ede16f30194aa88f0792b": {
+    "query": "\ninsert into repository (name, owner, license, stars, primary_language, languages, created_at)\nvalues ($1, $2, $3, $4, $5, $6, $7)\non conflict (name, owner)\ndo update\nset name = $1,\n    owner = $2,\n    license = $3,\n    stars = $4,\n    primary_language = $5,\n    languages = $6,\n    created_at = $7,\n    url = $8,\n    license_id = $9",
     "describe": {
       "columns": [],
       "parameters": {
@@ -69,6 +81,8 @@
           "Int4",
           "Text",
           "TextArray",
+          "Text",
+          "Text",
           "Text"
         ]
       },

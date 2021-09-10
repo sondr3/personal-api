@@ -9,6 +9,7 @@ query RepositoriesQuery($login: String!) {
     ) {
       nodes {
         name
+        url
         owner {
           __typename
           login

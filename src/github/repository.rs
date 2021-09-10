@@ -21,6 +21,8 @@ pub struct Repository {
     name: String,
     owner: String,
     license: String,
+    license_id: String,
+    url: String,
     stars: i32,
     primary_language: String,
     languages: Vec<String>,
@@ -40,7 +42,7 @@ pub async fn get_repo(
     .fetch_optional(&db)
     .await
     {
-        Ok(Some(repo)) => Ok((StatusCode::OK, Json(repo))),
+        Ok(Some(repo)) => Ok((StatusCode::FOUND, Json(repo))),
         _ => Err(StatusCode::NOT_FOUND),
     }
 }
@@ -59,14 +61,18 @@ set name = $1,
     stars = $4,
     primary_language = $5,
     languages = $6,
-    created_at = $7"#,
+    created_at = $7,
+    url = $8,
+    license_id = $9"#,
             self.name,
             self.owner,
             self.license,
             self.stars,
             self.primary_language,
             &self.languages,
-            self.created_at
+            self.created_at,
+            self.url,
+            self.license_id
         )
         .execute(db)
         .await?;
@@ -98,6 +104,13 @@ set name = $1,
                                 .as_ref()
                                 .map(|l| l.name.clone())
                                 .unwrap_or_else(|| "None".to_string()),
+                            license_id: repo
+                                .license_info
+                                .as_ref()
+                                .map(|l| l.spdx_id.clone())
+                                .unwrap_or_else(|| Some("None".to_string()))
+                                .unwrap(),
+                            url: repo.url.clone(),
                             stars: repo.stargazer_count as i32,
                             created_at: repo.created_at.clone(),
                             languages: repo
